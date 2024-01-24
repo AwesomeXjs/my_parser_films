@@ -1,9 +1,11 @@
-import requests
-from bs4 import BeautifulSoup
-from time import sleep
-from pathlib import Path
 import csv
 import json
+
+from time import sleep
+from pathlib import Path
+
+import requests
+from bs4 import BeautifulSoup
 
 
 data_path = Path('.')/'data'
@@ -47,6 +49,21 @@ with open('categories_dict.json', encoding='utf-8') as file:
 
 
 initial_count = int(len(all_categories_dict.items()) - 2)
+
+
+def write_to_csv(content, data_path, category):
+    for item in content:
+        film_name_russian = item.find('b').text
+        film_name_english = item.find('small').text
+        film_ref = item.find('a').get('href')
+
+        with open(f"{data_path}/{category}.csv", 'a', encoding='utf-8') as file:
+            writter = csv.writer(file)
+            writter.writerow((
+                film_name_russian, film_name_english, film_ref
+            ))
+
+
 for category, catefory_ref in all_categories_dict.items():
 
     print(f"Категория фильмов {category} загружается...")
@@ -61,16 +78,7 @@ for category, catefory_ref in all_categories_dict.items():
             writter = csv.writer(file)
             writter.writerow(
                 ('Название фильма', 'Название по английски', 'Ссылка на фильм'))
-        for item in content:
-            film_name_russian = item.find('b').text
-            film_name_english = item.find('small').text
-            film_ref = item.find('a').get('href')
-
-            with open(f"{data_path}/{category}.csv", 'a', encoding='utf-8') as file:
-                writter = csv.writer(file)
-                writter.writerow((
-                    film_name_russian, film_name_english, film_ref
-                ))
+        write_to_csv(content, data_path, category)
         if soup.find('div', class_='pages-numbers') is not None:
             pagination = [el.get('href') for el in soup.find(
                 'div', class_='pages-numbers').find_all('a')]
@@ -81,16 +89,9 @@ for category, catefory_ref in all_categories_dict.items():
                 html_text = requests.get(ref).text
                 soup = BeautifulSoup(html_text, 'lxml')
                 content = soup.find_all(class_='shortf')
-                for item in content:
-                    film_name_russian = item.find('b').text
-                    film_name_english = item.find('small').text
-                    film_ref = item.find('a').get('href')
 
-                    with open(f"{data_path}/{category}.csv", 'a', encoding='utf-8') as file:
-                        writter = csv.writer(file)
-                        writter.writerow((
-                            film_name_russian, film_name_english, film_ref
-                        ))
+                write_to_csv(content, data_path, category)
+
                 sleep(1)
 
             if initial_count == 0:
